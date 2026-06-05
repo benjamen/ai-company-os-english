@@ -56,7 +56,7 @@ import {
 } from 'lucide-react';
 import { useProject } from '@/api/projects';
 import { useTeams, useCreateTeam } from '@/api/teams';
-import { useAgents, useCreateAgent, useDeleteAgent } from '@/api/agents';
+import { useAgents, useAllAgents, useCreateAgent, useDeleteAgent } from '@/api/agents';
 import { useRunTask } from '@/api/tasks';
 import { useCreateMeeting } from '@/api/meetings';
 import { useTeamActivities } from '@/api/activities';
@@ -489,6 +489,7 @@ function ActiveTeamContent({ team }: { team: Team }) {
   const { data: agentsData, isLoading } = useAgents(team.id);
   const { data: activitiesData } = useTeamActivities(team.id);
   const { data: intentsData } = useAgentIntents(team.id);
+  const { data: allAgentsData } = useAllAgents();
   const activities = activitiesData?.data ?? [];
   const intentMap = useMemo(() => {
     const map = new Map<string, AgentIntent>();
@@ -508,6 +509,13 @@ function ActiveTeamContent({ team }: { team: Team }) {
     const priority: Record<string, number> = { busy: 0, waiting: 1, offline: 2 };
     return [...agents].sort((a, b) => (priority[a.status.toLowerCase()] ?? 99) - (priority[b.status.toLowerCase()] ?? 99));
   }, [agents]);
+
+  // Get available agents (not already in team)
+  const teamAgentIds = new Set(agents.map((a) => a.id));
+  const availableAgents = useMemo(() => {
+    const allAgents = allAgentsData?.data ?? [];
+    return allAgents.filter((a) => !teamAgentIds.has(a.id));
+  }, [allAgentsData?.data, teamAgentIds]);
 
   const DEPT_LABELS: Record<string, string> = {
     qa: t.projectDetail.deptQA,
@@ -532,8 +540,7 @@ function ActiveTeamContent({ team }: { team: Team }) {
   }, [sortedAgents]);
 
   const [addOpen, setAddOpen] = useState(false);
-  const [agentName, setAgentName] = useState('');
-  const [agentRole, setAgentRole] = useState('');
+  const [selectedAgentId, setSelectedAgentId] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [taskOpen, setTaskOpen] = useState(false);
   const [taskTitle, setTaskTitle] = useState('');
@@ -659,28 +666,50 @@ function ActiveTeamContent({ team }: { team: Team }) {
 
       {/* Add Agent Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
           <form onSubmit={(e) => {
             e.preventDefault();
-            if (!agentName.trim() || !agentRole.trim()) return;
+            if (!selectedAgentId) return;
+            const selectedAgent = availableAgents.find((a) => a.id === selectedAgentId);
+            if (!selectedAgent) return;
             createAgent.mutate(
-              { team_id: team.id, name: agentName.trim(), role: agentRole.trim() },
-              { onSuccess: () => { setAddOpen(false); setAgentName(''); setAgentRole(''); } },
+              {
+                team_id: team.id,
+                name: selectedAgent.name,
+                role: selectedAgent.role,
+                system_prompt: selectedAgent.system_prompt,
+                model: selectedAgent.model,
+              },
+              { onSuccess: () => { setAddOpen(false); setSelectedAgentId(''); } },
             );
           }}>
             <DialogHeader><DialogTitle>{t.projectDetail.addAgentDialog}</DialogTitle></DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label>{t.projectDetail.agentNameLabel}</Label>
-                <Input value={agentName} onChange={(e) => setAgentName(e.target.value)} required />
-              </div>
-              <div className="grid gap-2">
-                <Label>{t.projectDetail.agentRoleLabel}</Label>
-                <Input value={agentRole} onChange={(e) => setAgentRole(e.target.value)} required />
+                <Label htmlFor="select-agent">Select Agent</Label>
+                <Select value={selectedAgentId} onValueChange={setSelectedAgentId}>
+                  <SelectTrigger id="select-agent">
+                    <SelectValue placeholder="Choose an agent to add..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableAgents.length === 0 ? (
+                      <div className="p-2 text-sm text-gray-500">No available agents</div>
+                    ) : (
+                      availableAgents.map((agent) => (
+                        <SelectItem key={agent.id} value={agent.id}>
+                          {agent.name} — {agent.role}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit" disabled={createAgent.isPending}>
+              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
+                {t.common.cancel}
+              </Button>
+              <Button type="submit" disabled={createAgent.isPending || !selectedAgentId}>
                 {createAgent.isPending ? t.common.adding : t.common.add}
               </Button>
             </DialogFooter>
