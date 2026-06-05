@@ -17,6 +17,40 @@ from aiteam.types import Agent, AgentStatus, TaskStatus
 router = APIRouter(tags=["agents"])
 
 
+@router.get("/api/agents")
+async def list_system_agents():
+    """List all available system agents including Engineering Team."""
+    return {
+        "agents": [
+            {
+                "id": "engineering.backend_engineer",
+                "name": "Backend Engineer",
+                "role": "API & Database Design",
+                "tier": 2,
+                "status": "ready",
+                "description": "Designs APIs, databases, security, and infrastructure"
+            },
+            {
+                "id": "engineering.frontend_engineer",
+                "name": "Frontend Engineer",
+                "role": "UI/Component Implementation",
+                "tier": 2,
+                "status": "ready",
+                "description": "Builds responsive UIs, ensures accessibility, optimizes performance"
+            },
+            {
+                "id": "engineering.qa_specialist",
+                "name": "QA Specialist",
+                "role": "Testing & Quality Validation",
+                "tier": 2,
+                "status": "ready",
+                "description": "Creates test strategies, validates quality, signs off releases"
+            }
+        ],
+        "total": 3
+    }
+
+
 @router.get(
     "/api/teams/{team_id}/agents",
     response_model=APIListResponse[Agent],

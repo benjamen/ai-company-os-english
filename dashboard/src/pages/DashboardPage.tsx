@@ -54,7 +54,7 @@ function StatCard({
   );
 }
 
-/** 活跃项目指挥卡片 */
+/** 活跃Project指挥卡片 */
 function ActiveProjectCard({
   project,
   status,
@@ -169,7 +169,7 @@ function getDeptPrefix(name: string): string {
   return 'other';
 }
 
-/** 团队Agent状态概览（按部门分组） */
+/** TeamAgent状态概览（按部门分组） */
 function TeamAgentOverview({ agents, teamName }: { agents: Agent[]; teamName: string }) {
   const t = useT();
   if (agents.length === 0) return null;
@@ -300,9 +300,9 @@ export function DashboardPage() {
   let activeTasks = 0;
   let completedTasks = 0;
 
-  // 所有agent（含团队名）
+  // 所有agent（含Team名）
   const allAgentsWithTeam: Array<{ agent: Agent; teamName: string }> = [];
-  // 所有任务（含团队名）
+  // 所有Task（含Team名）
   const allTasksWithTeam: Array<Task & { teamName: string }> = [];
 
   for (const [, s] of statusMap) {
@@ -318,10 +318,10 @@ export function DashboardPage() {
     }
   }
 
-  // blocked任务 → 待处理决策队列
+  // blockedTask → 待处理决策队列
   const blockedTasks = allTasksWithTeam.filter((t) => t.status === 'blocked');
 
-  // 有活跃任务的项目（用于指挥中心卡片）
+  // 有活跃Task的Project（用于指挥中心卡片）
   const projectTeamMap = new Map<string, TeamStatus>();
   for (const team of teams) {
     if (team.project_id) {
@@ -330,7 +330,7 @@ export function DashboardPage() {
     }
   }
 
-  // 活跃团队的agents（用于概览）
+  // 活跃Team的agents（用于概览）
   const activeTeamAgents: Array<{ teamName: string; agents: Agent[] }> = [];
   for (const team of teams) {
     if (team.status === 'active') {
@@ -470,7 +470,7 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      {/* 团队Agent状态概览 */}
+      {/* TeamAgent状态概览 */}
       {activeTeamAgents.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
@@ -500,7 +500,7 @@ export function DashboardPage() {
         </Card>
       )}
 
-      {/* 活跃项目卡片区 */}
+      {/* 活跃Project卡片区 */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
