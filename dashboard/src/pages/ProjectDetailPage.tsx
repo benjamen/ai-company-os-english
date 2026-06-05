@@ -825,6 +825,7 @@ export function ProjectDetailPage() {
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamMode, setNewTeamMode] = useState('coordinate');
+  const [selectedAgentId, setSelectedAgentId] = useState('');
 
   const project = projectData?.data;
   const allTeams = teamsData?.data ?? [];
@@ -851,12 +852,14 @@ export function ProjectDetailPage() {
         name: newTeamName.trim(),
         mode: newTeamMode,
         project_id: projectId,
+        ...(selectedAgentId && { leader_agent_id: selectedAgentId }),
       },
       {
         onSuccess: () => {
           setCreateTeamOpen(false);
           setNewTeamName('');
           setNewTeamMode('coordinate');
+          setSelectedAgentId('');
         },
       },
     );
@@ -1013,6 +1016,25 @@ export function ProjectDetailPage() {
                     <SelectItem value="broadcast">Broadcast (share updates)</SelectItem>
                     <SelectItem value="route">Route (sequential work)</SelectItem>
                     <SelectItem value="meet">Meet (discussion-based)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="leader-agent">Leader Agent (Optional)</Label>
+                <Select value={selectedAgentId} onValueChange={setSelectedAgentId}>
+                  <SelectTrigger id="leader-agent">
+                    <SelectValue placeholder="Select a leader agent..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allAgents.length === 0 ? (
+                      <div className="p-2 text-sm text-gray-500">No agents available</div>
+                    ) : (
+                      allAgents.map((agent) => (
+                        <SelectItem key={agent.id} value={agent.id}>
+                          {agent.name} — {agent.role}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
