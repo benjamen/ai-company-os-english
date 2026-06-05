@@ -17,38 +17,48 @@ from aiteam.types import Agent, AgentStatus, TaskStatus
 router = APIRouter(tags=["agents"])
 
 
-@router.get("/api/agents")
+@router.get("/api/agents", response_model=APIListResponse)
 async def list_system_agents():
     """List all available system agents including Engineering Team."""
-    return {
-        "agents": [
-            {
-                "id": "engineering.backend_engineer",
-                "name": "Backend Engineer",
-                "role": "API & Database Design",
-                "tier": 2,
-                "status": "ready",
-                "description": "Designs APIs, databases, security, and infrastructure"
-            },
-            {
-                "id": "engineering.frontend_engineer",
-                "name": "Frontend Engineer",
-                "role": "UI/Component Implementation",
-                "tier": 2,
-                "status": "ready",
-                "description": "Builds responsive UIs, ensures accessibility, optimizes performance"
-            },
-            {
-                "id": "engineering.qa_specialist",
-                "name": "QA Specialist",
-                "role": "Testing & Quality Validation",
-                "tier": 2,
-                "status": "ready",
-                "description": "Creates test strategies, validates quality, signs off releases"
-            }
-        ],
-        "total": 3
-    }
+    agents_list = [
+        {
+            "id": "engineering.backend_engineer",
+            "name": "Backend Engineer",
+            "role": "API & Database Design",
+            "tier": 2,
+            "status": "ready",
+            "description": "Designs APIs, databases, security, and infrastructure",
+            "team_id": "",
+            "system_prompt": "You are a backend engineer",
+            "model": "claude-opus-4-8",
+            "config": {},
+        },
+        {
+            "id": "engineering.frontend_engineer",
+            "name": "Frontend Engineer",
+            "role": "UI/Component Implementation",
+            "tier": 2,
+            "status": "ready",
+            "description": "Builds responsive UIs, ensures accessibility, optimizes performance",
+            "team_id": "",
+            "system_prompt": "You are a frontend engineer",
+            "model": "claude-opus-4-8",
+            "config": {},
+        },
+        {
+            "id": "engineering.qa_specialist",
+            "name": "QA Specialist",
+            "role": "Testing & Quality Validation",
+            "tier": 2,
+            "status": "ready",
+            "description": "Creates test strategies, validates quality, signs off releases",
+            "team_id": "",
+            "system_prompt": "You are a QA specialist",
+            "model": "claude-opus-4-8",
+            "config": {},
+        }
+    ]
+    return APIListResponse(data=agents_list, total=len(agents_list))
 
 
 @router.get(
