@@ -2,6 +2,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './client';
 import type { Agent, APIResponse, APIListResponse } from '../types';
 
+export function useAllAgents() {
+  return useQuery({
+    queryKey: ['agents'],
+    queryFn: () => apiFetch<APIListResponse<Agent>>('/api/agents'),
+  });
+}
+
 export function useAgents(teamId: string) {
   return useQuery({
     queryKey: ['teams', teamId, 'agents'],

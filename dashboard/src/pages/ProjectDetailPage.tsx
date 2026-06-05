@@ -55,7 +55,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { useProject } from '@/api/projects';
-import { useTeams } from '@/api/teams';
+import { useTeams, useCreateTeam } from '@/api/teams';
 import { useAgents, useCreateAgent, useDeleteAgent } from '@/api/agents';
 import { useRunTask } from '@/api/tasks';
 import { useCreateMeeting } from '@/api/meetings';
@@ -820,6 +820,11 @@ export function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const { data: projectData, isLoading: projectLoading, error: projectError } = useProject(projectId ?? '');
   const { data: teamsData } = useTeams();
+  const createTeam = useCreateTeam();
+
+  const [createTeamOpen, setCreateTeamOpen] = useState(false);
+  const [newTeamName, setNewTeamName] = useState('');
+  const [newTeamMode, setNewTeamMode] = useState('coordinate');
 
   const project = projectData?.data;
   const allTeams = teamsData?.data ?? [];
@@ -837,6 +842,25 @@ export function ProjectDetailPage() {
   const leaderTeamId = projectTeams.find((tm) => tm.leader_agent_id)?.id ?? projectTeams[0]?.id ?? '';
   const { data: leaderTeamAgents } = useAgents(leaderTeamId);
   const allAgents = leaderTeamAgents?.data ?? [];
+
+  function handleCreateTeam(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newTeamName.trim() || !projectId) return;
+    createTeam.mutate(
+      {
+        name: newTeamName.trim(),
+        mode: newTeamMode,
+        project_id: projectId,
+      },
+      {
+        onSuccess: () => {
+          setCreateTeamOpen(false);
+          setNewTeamName('');
+          setNewTeamMode('coordinate');
+        },
+      },
+    );
+  }
 
   if (projectLoading) {
     return (
@@ -902,10 +926,16 @@ export function ProjectDetailPage() {
 
       {/* Tabs: 团队总览 / Ecosystem 设置 */}
       <Tabs defaultValue="teams">
-        <TabsList variant="line" className="gap-3">
-          <TabsTrigger value="teams">团队总览</TabsTrigger>
-          <TabsTrigger value="ecosystem">Ecosystem 设置</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between mb-4">
+          <TabsList variant="line" className="gap-3">
+            <TabsTrigger value="teams">团队总览</TabsTrigger>
+            <TabsTrigger value="ecosystem">Ecosystem 设置</TabsTrigger>
+          </TabsList>
+          <Button size="sm" onClick={() => setCreateTeamOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Team
+          </Button>
+        </div>
 
         <TabsContent value="teams" className="mt-4 space-y-6">
           {/* Leader Status */}
@@ -949,6 +979,59 @@ export function ProjectDetailPage() {
           {projectId && <EcosystemSettingsPanel projectId={projectId} />}
         </TabsContent>
       </Tabs>
+
+      {/* Create Team Dialog */}
+      <Dialog open={createTeamOpen} onOpenChange={setCreateTeamOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <form onSubmit={handleCreateTeam}>
+            <DialogHeader>
+              <DialogTitle>Create Team</DialogTitle>
+              <DialogDescription>
+                Create a new team for {project?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="team-name">Team Name</Label>
+                <Input
+                  id="team-name"
+                  placeholder="e.g., Backend Team"
+                  value={newTeamName}
+                  onChange={(e) => setNewTeamName(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="team-mode">Team Mode</Label>
+                <Select value={newTeamMode} onValueChange={setNewTeamMode}>
+                  <SelectTrigger id="team-mode">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="coordinate">Coordinate (agents work together)</SelectItem>
+                    <SelectItem value="broadcast">Broadcast (share updates)</SelectItem>
+                    <SelectItem value="route">Route (sequential work)</SelectItem>
+                    <SelectItem value="meet">Meet (discussion-based)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCreateTeamOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createTeam.isPending || !newTeamName.trim()}>
+                {createTeam.isPending ? 'Creating...' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

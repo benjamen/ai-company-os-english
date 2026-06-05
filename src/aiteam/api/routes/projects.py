@@ -139,6 +139,19 @@ async def project_summary(
     }
 
 
+@router.get("/{project_id}/teams", response_model=APIListResponse)
+async def list_project_teams(
+    project_id: str,
+    repo: StorageRepository = Depends(get_repository),
+) -> APIListResponse:
+    """List all teams associated with a project."""
+    project = await repo.get_project(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail=f"项目 {project_id} 不存在")
+    teams = await repo.list_teams_by_project(project_id)
+    return APIListResponse(data=teams, total=len(teams))
+
+
 # ================================================================
 # Phase management
 # ================================================================

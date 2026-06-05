@@ -115,6 +115,16 @@ async def delete_team(
     return APIResponse(data=result, message="团队删除成功")
 
 
+@router.get("/{team_id}/members", response_model=APIListResponse)
+async def list_team_members(
+    team_id: str,
+    repo: StorageRepository = Depends(get_scoped_repository),
+) -> APIListResponse:
+    """List agents (members) of a team."""
+    agents = await repo.list_agents(team_id)
+    return APIListResponse(data=agents, total=len(agents))
+
+
 @router.get("/{team_id}/status", response_model=APIResponse[TeamStatusSummary])
 async def get_status(
     team_id: str,

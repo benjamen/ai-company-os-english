@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './client';
-import type { Team, APIResponse, APIListResponse, TeamStatus } from '../types';
+import type { Team, Agent, APIResponse, APIListResponse, TeamStatus } from '../types';
 
 export function useTeams() {
   return useQuery({
@@ -25,16 +25,33 @@ export function useTeamStatus(id: string) {
   });
 }
 
+export function useTeamMembers(id: string) {
+  return useQuery({
+    queryKey: ['teams', id, 'members'],
+    queryFn: () => apiFetch<APIListResponse<Agent>>(`/api/teams/${id}/members`),
+    enabled: !!id,
+  });
+}
+
 export function useCreateTeam() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; mode: string; config?: Record<string, unknown> }) =>
+    mutationFn: (data: {
+      name: string;
+      mode: string;
+      project_id?: string;
+      leader_agent_id?: string;
+      config?: Record<string, unknown>;
+    }) =>
       apiFetch<APIResponse<Team>>('/api/teams', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['teams'] });
+      if (variables.project_id) {
+        void queryClient.invalidateQueries({ queryKey: ['projects', variables.project_id, 'teams'] });
+      }
     },
   });
 }
