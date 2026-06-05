@@ -848,7 +848,7 @@ export function ProjectDetailPage() {
   const t = useT();
   const { projectId } = useParams<{ projectId: string }>();
   const { data: projectData, isLoading: projectLoading, error: projectError } = useProject(projectId ?? '');
-  const { data: teamsData } = useTeams();
+  const { data: teamsData, refetch: refetchTeams } = useTeams();
   const createTeam = useCreateTeam();
 
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
@@ -889,6 +889,8 @@ export function ProjectDetailPage() {
           setNewTeamName('');
           setNewTeamMode('coordinate');
           setSelectedAgentId('');
+          // Refetch teams to show the newly created team
+          void refetchTeams();
         },
       },
     );
