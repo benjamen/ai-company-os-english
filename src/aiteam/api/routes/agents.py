@@ -18,46 +18,21 @@ router = APIRouter(tags=["agents"])
 
 
 @router.get("/api/agents", response_model=APIListResponse)
-async def list_system_agents():
-    """List all available system agents including Engineering Team."""
-    agents_list = [
-        {
-            "id": "engineering.backend_engineer",
-            "name": "Backend Engineer",
-            "role": "API & Database Design",
-            "tier": 2,
-            "status": "ready",
-            "description": "Designs APIs, databases, security, and infrastructure",
-            "team_id": "",
-            "system_prompt": "You are a backend engineer",
-            "model": "claude-opus-4-8",
-            "config": {},
-        },
-        {
-            "id": "engineering.frontend_engineer",
-            "name": "Frontend Engineer",
-            "role": "UI/Component Implementation",
-            "tier": 2,
-            "status": "ready",
-            "description": "Builds responsive UIs, ensures accessibility, optimizes performance",
-            "team_id": "",
-            "system_prompt": "You are a frontend engineer",
-            "model": "claude-opus-4-8",
-            "config": {},
-        },
-        {
-            "id": "engineering.qa_specialist",
-            "name": "QA Specialist",
-            "role": "Testing & Quality Validation",
-            "tier": 2,
-            "status": "ready",
-            "description": "Creates test strategies, validates quality, signs off releases",
-            "team_id": "",
-            "system_prompt": "You are a QA specialist",
-            "model": "claude-opus-4-8",
-            "config": {},
-        }
-    ]
+async def list_system_agents(repo: StorageRepository = Depends(get_repository)):
+    """List all available agents from database, organized by team."""
+    # Get all teams
+    all_teams = await repo.list_teams()
+
+    # Collect all agents from all teams, removing duplicates
+    agents_dict = {}
+    for team in all_teams:
+        team_agents = await repo.list_agents(team.id)
+        for agent in team_agents:
+            # Use agent id as key to avoid duplicates
+            if agent.id not in agents_dict:
+                agents_dict[agent.id] = agent
+
+    agents_list = list(agents_dict.values())
     return APIListResponse(data=agents_list, total=len(agents_list))
 
 
