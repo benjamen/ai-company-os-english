@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -164,15 +164,48 @@ function AgentCard({ agent }: AgentCardProps) {
 export function AgentLivePage() {
   const t = useT();
   const [projectFilter, setProjectFilter] = useState('__all__');
+  const [systemAgents, setSystemAgents] = useState<Agent[]>([]);
+  const [loadingSystemAgents, setLoadingSystemAgents] = useState(true);
   const { data: projectsData } = useProjects();
   const projects = projectsData?.data ?? [];
 
-  const selectedProject = projectFilter === '__all__' ? undefined : projectFilter;
-  const { agents, isLoading, error } = useAllAgents(selectedProject);
+  // Fetch system agents (Engineering Team)
+  useEffect(() => {
+    const fetchSystemAgents = async () => {
+      try {
+        const response = await apiFetch<{ agents: Agent[]; total: number }>('/api/agents');
+        if (response?.agents) {
+          // Convert system agents to Agent type format
+          const converted = response.agents.map((agent: any) => ({
+            id: agent.id,
+            name: agent.name,
+            role: agent.role,
+            status: agent.status || 'ready',
+            current_task: agent.description,
+            last_active_at: new Date().toISOString(),
+          } as Agent));
+          setSystemAgents(converted);
+        }
+      } catch {
+        console.error('Failed to fetch system agents');
+      } finally {
+        setLoadingSystemAgents(false);
+      }
+    };
+    fetchSystemAgents();
+  }, []);
 
-  const busyCount = agents.filter((a) => resolveStatus(a) === 'busy').length;
-  const waitingCount = agents.filter((a) => resolveStatus(a) === 'waiting').length;
-  const offlineCount = agents.filter((a) => resolveStatus(a) === 'offline').length;
+  const selectedProject = projectFilter === '__all__' ? undefined : projectFilter;
+  const { agents: teamAgents, isLoading, error } = useAllAgents(selectedProject);
+
+  // Combine system agents with team agents
+  const allAgents = projectFilter === '__all__' ? [...systemAgents, ...teamAgents] : teamAgents;
+
+  const busyCount = allAgents.filter((a) => resolveStatus(a) === 'busy').length;
+  const waitingCount = allAgents.filter((a) => resolveStatus(a) === 'waiting').length;
+  const offlineCount = allAgents.filter((a) => resolveStatus(a) === 'offline').length;
+
+  const isLoading2 = isLoading || loadingSystemAgents;
 
   return (
     <div className="space-y-6">
@@ -205,7 +238,7 @@ export function AgentLivePage() {
 
       {/* Stats bar */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard icon={Users} label={t.agentLive.statTotal} value={agents.length} />
+        <StatCard icon={Users} label={t.agentLive.statTotal} value={allAgents.length} />
         <StatCard
           icon={Activity}
           label={t.agentLive.statBusy}
@@ -227,7 +260,7 @@ export function AgentLivePage() {
       </div>
 
       {/* Agent grid */}
-      {isLoading ? (
+      {isLoading2 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>
@@ -242,11 +275,11 @@ export function AgentLivePage() {
             </Card>
           ))}
         </div>
-      ) : error ? (
+      ) : error && !systemAgents.length ? (
         <p className="text-sm text-destructive">
           {t.agentLive.loadFailed((error as Error).message)}
         </p>
-      ) : agents.length === 0 ? (
+      ) : allAgents.length === 0 ? (
         <div className="py-16 text-center">
           <Users className="mx-auto h-12 w-12 text-muted-foreground/40" />
           <p className="mt-4 text-sm font-medium text-muted-foreground">{t.agentLive.noAgents}</p>
@@ -254,7 +287,7 @@ export function AgentLivePage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {agents.map((agent) => (
+          {allAgents.map((agent) => (
             <AgentCard key={agent.id} agent={agent} />
           ))}
         </div>
