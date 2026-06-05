@@ -14,9 +14,9 @@ import { useProject } from '@/context/ProjectContext';
 type LifecycleTab = 'active' | 'all' | 'deleted';
 
 /**
- * Ecosystem 列表页 — v1.5.0-E：stage 徽章 + 活跃/全量/已删除 tab。
- * 路径：/ecosystem
- * 数据源：GET /api/ecosystem/profiles?facet_counts=true&is_active=...&is_deleted=...
+ * Ecosystem List Page — v1.5.0-E: stage badge + active/all/deleted tabs.
+ * Path: /ecosystem
+ * Data source: GET /api/ecosystem/profiles?facet_counts=true&is_active=...&is_deleted=...
  */
 export function EcosystemListPage() {
   const { projectId, projectName } = useProject();
@@ -26,11 +26,11 @@ export function EcosystemListPage() {
     facetCounts: true,
   });
 
-  // 根据 tab 注入活跃/已删除参数
+  // Inject active/deleted parameters based on tab
   const effectiveFilters = useMemo<EcosystemFilters>(() => {
     if (tab === 'active') return { ...filters, isActive: true, isDeleted: false };
     if (tab === 'deleted') return { ...filters, isDeleted: true };
-    return { ...filters }; // all: 不限定 active/deleted
+    return { ...filters }; // all: no active/deleted restrictions
   }, [filters, tab]);
 
   const { data, isLoading, error } = useEcosystemProfiles(effectiveFilters);
@@ -52,19 +52,19 @@ export function EcosystemListPage() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* 页头 */}
+      {/* Page Header */}
       <div className="border-b px-6 py-4 bg-background">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <Boxes className="h-5 w-5 text-primary" aria-hidden="true" />
-              <h1 className="text-xl font-semibold">生态仓档案</h1>
+              <h1 className="text-xl font-semibold">Ecosystem Catalog</h1>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              Claude Agent / MCP / Memory / Skill 等开源仓的广索引视图。点击卡片进入详情。
+              Comprehensive index of open-source repositories: Claude Agents, MCPs, Memory systems, Skills, and more. Click a card to view details.
               {projectName && (
                 <>
-                  {' '}当前已按项目 <span className="text-primary font-medium">{projectName}</span> 过滤。
+                  {' '}Currently filtered by project <span className="text-primary font-medium">{projectName}</span>.
                 </>
               )}
             </p>
@@ -77,25 +77,25 @@ export function EcosystemListPage() {
             render={<Link to="/ecosystem/research" />}
           >
             <SearchIcon className="mr-1 h-4 w-4" aria-hidden="true" />
-            查找候选
+            Search Candidates
           </Button>
         </div>
 
-        {/* 活跃/全量/已删除 tab */}
+        {/* Active / All / Deleted tabs */}
         <Tabs
           value={tab}
           onValueChange={(v: string) => setTab(v as LifecycleTab)}
           className="mt-3"
         >
           <TabsList variant="line" className="gap-2">
-            <TabsTrigger value="active" aria-label="活跃集">
-              活跃集
+            <TabsTrigger value="active" aria-label="Active Repositories">
+              Active
             </TabsTrigger>
-            <TabsTrigger value="all" aria-label="全量">
-              全量
+            <TabsTrigger value="all" aria-label="All Repositories">
+              All
             </TabsTrigger>
-            <TabsTrigger value="deleted" aria-label="已删除">
-              已删除
+            <TabsTrigger value="deleted" aria-label="Deleted Repositories">
+              Deleted
             </TabsTrigger>
           </TabsList>
         </Tabs>
